@@ -6,7 +6,7 @@ import json
 import logging
 import os
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -97,6 +97,11 @@ def pivotes(h: np.ndarray, l: np.ndarray, izq: int, der: int):
 # DATOS
 # =====================================
 
+def es_24h(ticker: str) -> bool:
+    """Cripto (BTC-USD), divisas (EURUSD=X) y futuros (GC=F): no siguen el horario de la bolsa."""
+    return ticker.endswith(("-USD", "=X", "=F"))
+
+
 def descargar_diario(ticker: str) -> pd.DataFrame:
     """OHLC diario de Yahoo Finance, solo con velas ya cerradas."""
     df = yf.download(ticker, period="2y", interval="1d", auto_adjust=False,
@@ -105,10 +110,16 @@ def descargar_diario(ticker: str) -> pd.DataFrame:
     if df is None or df.empty or any(c not in df for c in cols):
         raise ValueError(f"No hay datos para {ticker}")
     df = df[cols].apply(pd.to_numeric, errors="coerce").dropna().astype(float)
-    # Si se ejecuta antes de las 17:00 NY, no usar la barra del dia, que podria estar abierta.
-    ny_now = datetime.now(NY)
-    if pd.Timestamp(df.index[-1]).date() >= ny_now.date() and ny_now.hour < 17:
-        df = df.iloc[:-1]
+    ultima = pd.Timestamp(df.index[-1]).date()
+    if es_24h(ticker):
+        # Cripto, divisas y futuros operan casi 24 h: la vela del dia sigue abierta -> usar la anterior.
+        if ultima >= datetime.now(timezone.utc).date():
+            df = df.iloc[:-1]
+    else:
+        # Acciones: si se ejecuta antes de las 17:00 NY, no usar la barra del dia (podria estar abierta).
+        ny_now = datetime.now(NY)
+        if ultima >= ny_now.date() and ny_now.hour < 17:
+            df = df.iloc[:-1]
     if df.empty:
         raise ValueError("Sin barras cerradas")
     return df
@@ -130,22 +141,37 @@ def telegram_send(message: str) -> None:
         raise RuntimeError("Telegram no confirmo el envio")
 
 
+def px(x: float) -> str:
+    """Precio con decimales segun su magnitud (las divisas necesitan 4-5)."""
+    if abs(x) >= 100:
+        return f"{x:,.2f}"
+    return f"{x:.4f}" if abs(x) >= 1 else f"{x:.5f}"
+
+
 def mensaje_senal(nombre: str, ticker: str, s: Senal) -> str:
     icono = "🟢" if s.tipo == "COMPRA" else "🔴"
+    zona = "" if es_24h(ticker) else " (Nueva York)"
     return (f"{icono} {s.tipo} | {ticker} | {nombre}\n"
-            f"Vela cerrada: {s.fecha} (Nueva York)\n"
-            f"Entrada (cierre): ${s.entrada:.2f}\n"
-            f"Stop: ${s.stop:.2f}\n"
-            f"TP1: ${s.tp1:.2f} | TP2: ${s.tp2:.2f}\n"
+            f"Vela cerrada: {s.fecha}{zona}\n"
+            f"Entrada (cierre): {px(s.entrada)}\n"
+            f"Stop: {px(s.stop)}\n"
+            f"TP1: {px(s.tp1)} | TP2: {px(s.tp2)}\n"
             f"{s.detalle}\n"
             "Señal técnica informativa; no es una orden de inversión.")
 
 
 def mensaje_reporte(nombre: str, fecha: str, filas: list) -> str:
-    """filas = [(ticker, cierre, cambio_pct, rsi14, tipo_senal | None), ...]"""
-    lineas = [f"📊 Reporte de cierre | {nombre} | {fecha} (Nueva York)"]
-    for t, cierre, cambio, r, sig in filas:
-        lineas.append(f"{t}: ${cierre:.2f} ({cambio:+.1f}%) | RSI {r:.1f} | señal {sig or 'ninguna'}")
+    """filas = [(ticker, fecha_vela, cierre, cambio_pct, rsi14, tipo_senal | None), ...]"""
+    lineas = [f"📊 Reporte de cierre | {nombre} | {fecha}"]
+    hay_desfase = False
+    for t, f, cierre, cambio, r, sig in filas:
+        marca = ""
+        if f != fecha:
+            marca = f" [{f[5:]}]"
+            hay_desfase = True
+        lineas.append(f"{t}{marca}: {px(cierre)} ({cambio:+.1f}%) | RSI {r:.1f} | señal {sig or 'ninguna'}")
+    if hay_desfase:
+        lineas.append("[MM-DD] = última vela disponible de ese activo (mercado cerrado o día en curso).")
     lineas.append("Informativo; no es una orden de inversión.")
     return "\n".join(lineas)
 
