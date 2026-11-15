@@ -28,7 +28,7 @@ jobs:
     env:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TOKEN_PIN_BAR }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-      TICKERS: "NVDA,AAPL,MSFT"      # cambia aqui las 3 acciones de este bot
+      TICKERS: "NVDA,AAPL,MSFT,GC=F,BTC-USD,EURUSD=X"      # cambia aqui las 3 acciones de este bot
       REPORTE_DIARIO: "1"            # "0" para desactivar el reporte de cierre
     steps:
       - uses: actions/checkout@v4
