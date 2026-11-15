@@ -10,7 +10,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from core import Senal, atr, pivotes, rsi
+from core import Senal, atr, pivotes, px, rsi
 
 NAME = "Doble Suelo/Techo"
 MIN_BARS = 120
@@ -64,7 +64,7 @@ def _procesar(s: _Estado, bull: bool, i: int, c, rsi_v, atr_i: float, fecha: str
                         senal = Senal(idx=i, fecha=fecha, tipo="COMPRA" if bull else "VENTA",
                                       entrada=entry, stop=float(sl), tp1=float(tp1), tp2=float(tp2),
                                       detalle=(f"{'Doble suelo' if bull else 'Doble techo'} | RSI(14): {rsi_v[i]:.1f}\n"
-                                               f"Extremos {s.e1:.2f} / {s.e2:.2f} | Cuello {s.neck:.2f}"))
+                                               f"Extremos {px(s.e1)} / {px(s.e2)} | Cuello {px(s.neck)}"))
                 s.st = 0
     return senal
 

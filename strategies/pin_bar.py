@@ -6,7 +6,7 @@ Con barrido: la mecha perfora el extremo reciente y el cierre lo recupera.
 """
 import pandas as pd
 
-from core import Senal, atr, ema, rsi
+from core import Senal, atr, ema, px, rsi
 
 NAME = "Pin Bar"
 MIN_BARS = 220
@@ -79,5 +79,5 @@ def senales(df: pd.DataFrame) -> list:
                              entrada=entry, stop=float(sl),
                              tp1=entry + dirv * TP1_R * riesgo, tp2=entry + dirv * TP2_R * riesgo,
                              detalle=(f"Pin bar {'alcista (martillo)' if bull else 'bajista (estrella fugaz)'} | RSI previo: {rsi_v[i - 1]:.1f}\n"
-                                      f"{'Minimo' if bull else 'Maximo'} de {LOOKBACK} velas: {ref:.2f} | EMA({EMA_LEN}): {ema_v[i]:.2f}")))
+                                      f"{'Minimo' if bull else 'Maximo'} de {LOOKBACK} velas: {px(ref)} | EMA({EMA_LEN}): {px(ema_v[i])}")))
     return out

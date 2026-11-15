@@ -11,7 +11,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from core import Senal, pivotes, rsi
+from core import Senal, pivotes, px, rsi
 
 NAME = "Bat"
 MIN_BARS = 120
@@ -102,7 +102,7 @@ def _procesar(s: _Estado, bull: bool, i: int, h, l, c, rsi_v, fecha: str):
                 senal = Senal(idx=i, fecha=fecha, tipo="COMPRA" if bull else "VENTA",
                               entrada=entry, stop=float(sl), tp1=float(tp1), tp2=float(tp2),
                               detalle=(f"Bat {'alcista' if bull else 'bajista'} | RSI(14): {rsi_v[i]:.1f}\n"
-                                       f"X {s.x:.2f} | A {s.a:.2f} | B {s.b:.2f} | C {s.c:.2f} | D {s.d:.2f}"))
+                                       f"X {px(s.x)} | A {px(s.a)} | B {px(s.b)} | C {px(s.c)} | D {px(s.d)}"))
             s.st = 0
         else:
             s.cnt += 1

@@ -6,7 +6,7 @@ Se espera una ruptura de la madre con CIERRE, a favor de la EMA.
 import numpy as np
 import pandas as pd
 
-from core import Senal, atr, ema
+from core import Senal, atr, ema, px
 
 NAME = "Inside Bar"
 MIN_BARS = 80
@@ -57,8 +57,8 @@ def senales(df: pd.DataFrame) -> list:
                     out.append(Senal(idx=i, fecha=fechas[i], tipo="COMPRA" if bull else "VENTA",
                                      entrada=entry, stop=float(sl),
                                      tp1=entry + dirv * TP1_R * riesgo, tp2=entry + dirv * TP2_R * riesgo,
-                                     detalle=(f"Ruptura de la vela madre ({m_low:.2f} - {m_high:.2f})\n"
-                                              f"EMA({EMA_LEN}): {ema_v[i]:.2f} | Riesgo: {riesgo:.2f}")))
+                                     detalle=(f"Ruptura de la vela madre ({px(m_low)} - {px(m_high)})\n"
+                                              f"EMA({EMA_LEN}): {px(ema_v[i])} | Riesgo: {px(riesgo)}")))
                 activo = False
             elif edad > MAX_ESPERA:
                 activo = False

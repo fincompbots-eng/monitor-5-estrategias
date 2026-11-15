@@ -5,7 +5,7 @@ anterior, con cierre sobre la EMA y RSI de la vela previa en zona baja. La bajis
 """
 import pandas as pd
 
-from core import Senal, atr, ema, rsi
+from core import Senal, atr, ema, px, rsi
 
 NAME = "Engulfing"
 MIN_BARS = 220
@@ -71,5 +71,5 @@ def senales(df: pd.DataFrame) -> list:
                              entrada=entry, stop=float(sl),
                              tp1=entry + dirv * TP1_R * riesgo, tp2=entry + dirv * TP2_R * riesgo,
                              detalle=(f"Envolvente {'alcista' if bull else 'bajista'} | RSI previo: {rsi_v[i - 1]:.1f}\n"
-                                      f"EMA({EMA_LEN}): {ema_v[i]:.2f} | Riesgo: {riesgo:.2f}")))
+                                      f"EMA({EMA_LEN}): {px(ema_v[i])} | Riesgo: {px(riesgo)}")))
     return out
