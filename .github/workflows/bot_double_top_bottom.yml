@@ -2,11 +2,15 @@ name: Bot Doble Suelo Techo
 
 on:
   schedule:
-    - cron: "37 23 * * 1-5"   # lunes a viernes, UTC (despues del cierre de EE. UU.)
+    - cron: "37 23 * * *"     # todos los dias, UTC (la cripto opera fines de semana)
   workflow_dispatch:
     inputs:
       test_telegram:
         description: "Solo probar la conexion con Telegram"
+        type: boolean
+        default: false
+      demo:
+        description: "Enviar UN mensaje de ejemplo con una senal HISTORICA (no vigente)"
         type: boolean
         default: false
       historial:
@@ -28,7 +32,7 @@ jobs:
     env:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TOKEN_DOBLE }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-      TICKERS: "NVDA,AAPL,MSFT,GC=F,BTC-USD,EURUSD=X" # cambia aqui las 3 acciones de este bot
+      TICKERS: "NVDA,AAPL,MSFT,BTC-USD,ETH-USD,GC=F,EURUSD=X"   # edita aqui los activos de este bot
       REPORTE_DIARIO: "1"            # "0" para desactivar el reporte de cierre
     steps:
       - uses: actions/checkout@v4
@@ -45,12 +49,16 @@ jobs:
         if: ${{ inputs.test_telegram == true }}
         run: python run_bot.py double_top_bottom --test-telegram
 
+      - name: Enviar mensaje de demostracion
+        if: ${{ inputs.test_telegram != true && inputs.demo == true }}
+        run: python run_bot.py double_top_bottom --demo
+
       - name: Listar historial de senales
-        if: ${{ inputs.test_telegram != true && inputs.historial != '' && inputs.historial != '0' }}
+        if: ${{ inputs.test_telegram != true && inputs.demo != true && inputs.historial != '' && inputs.historial != '0' }}
         run: python run_bot.py double_top_bottom --historial ${{ inputs.historial }}
 
       - name: Analizar acciones y enviar alertas
-        if: ${{ inputs.test_telegram != true && (inputs.historial == '' || inputs.historial == '0') }}
+        if: ${{ inputs.test_telegram != true && inputs.demo != true && (inputs.historial == '' || inputs.historial == '0') }}
         run: python run_bot.py double_top_bottom
 
       - name: Guardar estado
